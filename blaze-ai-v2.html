@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BLAZE-AI Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Syne:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:#060810;--bg1:#090c15;--bg2:#0d1120;--bg3:#111628;--card:#0f1422;--panel:#0b0e1a;
+  --border:rgba(255,100,20,0.12);--border2:rgba(255,255,255,0.06);
+  --fire:#ff5500;--fire2:#ff7a28;--fire3:#ffaa60;--fire4:#ffd090;--glow:rgba(255,85,0,0.3);
+  --blue:#2060ff;--blue2:#4488ff;--gold:#ffcc44;
+  --text:#ede8e0;--text2:#b0aabc;--muted:#606080;
+  --font-head:'Orbitron',monospace;--font-body:'Syne',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);display:flex;height:100dvh;}
+
+/* BG */
+.bg-fx{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.bg-orb{position:absolute;border-radius:50%;filter:blur(90px);opacity:0.06;animation:drift 18s ease-in-out infinite;}
+.bg-orb:nth-child(1){width:600px;height:600px;background:var(--fire);top:-200px;right:-100px;animation-duration:20s;}
+.bg-orb:nth-child(2){width:400px;height:400px;background:var(--blue);bottom:-100px;left:-100px;animation-duration:25s;animation-delay:-8s;}
+.bg-orb:nth-child(3){width:300px;height:300px;background:var(--fire3);top:40%;left:30%;animation-duration:15s;animation-delay:-4s;opacity:0.04;}
+@keyframes drift{0%,100%{transform:translate(0,0) scale(1);}33%{transform:translate(40px,-30px) scale(1.05);}66%{transform:translate(-20px,40px) scale(0.95);}}
+.bg-grid{position:fixed;inset:0;background-image:linear-gradient(rgba(255,85,0,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,85,0,0.03) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0;}
+
+/* API KEY GATE */
+#api-gate{
+  position:fixed;inset:0;background:rgba(6,8,16,0.97);
+  display:flex;align-items:center;justify-content:center;
+  z-index:500;backdrop-filter:blur(20px);
+  padding:20px;
+}
+.gate-box{
+  background:var(--card);border:1px solid rgba(255,85,0,0.25);
+  border-radius:20px;padding:36px 32px;max-width:440px;width:100%;
+  text-align:center;
+  box-shadow:0 0 60px rgba(255,85,0,0.1);
+  animation:wu 0.5s ease;
+}
+.gate-logo{
+  width:64px;height:64px;background:linear-gradient(135deg,var(--fire),var(--fire3));
+  border-radius:16px;font-size:30px;display:flex;align-items:center;justify-content:center;
+  margin:0 auto 18px;box-shadow:0 0 30px rgba(255,85,0,0.4);
+  animation:logo-glow 3s ease-in-out infinite;
+}
+@keyframes logo-glow{0%,100%{box-shadow:0 0 30px rgba(255,85,0,0.4);}50%{box-shadow:0 0 50px rgba(255,85,0,0.65);}}
+.gate-title{font-family:var(--font-head);font-size:22px;letter-spacing:4px;color:var(--fire2);margin-bottom:6px;}
+.gate-sub{font-size:13px;color:var(--text2);margin-bottom:24px;line-height:1.6;font-weight:300;}
+.gate-label{font-size:11px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;text-align:left;margin-bottom:7px;}
+.gate-input{
+  width:100%;background:var(--bg2);border:1px solid rgba(255,255,255,0.08);
+  border-radius:10px;padding:12px 14px;color:var(--text);
+  font-family:var(--font-body);font-size:13px;outline:none;
+  transition:all 0.2s;margin-bottom:8px;
+}
+.gate-input:focus{border-color:rgba(255,85,0,0.4);box-shadow:0 0 0 3px rgba(255,85,0,0.07);}
+.gate-input::placeholder{color:rgba(255,255,255,0.18);}
+.gate-hint{font-size:11px;color:var(--muted);text-align:left;margin-bottom:20px;line-height:1.6;}
+.gate-hint a{color:var(--fire2);text-decoration:none;}
+.gate-hint a:hover{text-decoration:underline;}
+.gate-btn{
+  width:100%;padding:13px;border-radius:11px;
+  background:linear-gradient(135deg,var(--fire),var(--fire2));
+  border:none;color:#fff;font-family:var(--font-body);font-size:14px;font-weight:600;
+  cursor:pointer;transition:all 0.2s;letter-spacing:0.5px;
+  box-shadow:0 0 18px rgba(255,85,0,0.3);
+}
+.gate-btn:hover{box-shadow:0 0 30px rgba(255,85,0,0.5);transform:translateY(-1px);}
+.gate-err{font-size:12px;color:#ff5566;margin-top:10px;display:none;}
+.gate-skip{font-size:11px;color:var(--muted);margin-top:12px;cursor:pointer;text-decoration:underline;}
+.gate-skip:hover{color:var(--text2);}
+
+/* SIDEBAR */
+.sidebar{width:72px;min-width:72px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:20px 0;gap:8px;position:relative;z-index:10;flex-shrink:0;}
+.sidebar-logo{width:44px;height:44px;background:linear-gradient(135deg,var(--fire),var(--fire3));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 0 20px var(--glow);margin-bottom:16px;animation:logo-glow 3s ease-in-out infinite;cursor:pointer;}
+.nav-btn{width:44px;height:44px;border-radius:12px;border:1px solid transparent;background:transparent;color:var(--muted);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;transition:all 0.2s;font-size:18px;}
+.nav-btn span.nav-label{font-size:7px;letter-spacing:0.5px;text-transform:uppercase;font-family:var(--font-body);line-height:1;}
+.nav-btn:hover{background:rgba(255,85,0,0.08);color:var(--fire2);border-color:rgba(255,85,0,0.15);}
+.nav-btn.active{background:rgba(255,85,0,0.12);color:var(--fire2);border-color:rgba(255,85,0,0.25);}
+.sidebar-spacer{flex:1;}
+.plan-badge{width:44px;padding:5px 4px;background:linear-gradient(135deg,rgba(255,85,0,0.15),rgba(255,85,0,0.05));border:1px solid rgba(255,85,0,0.2);border-radius:8px;text-align:center;font-size:7px;letter-spacing:1px;color:var(--fire2);font-family:var(--font-head);line-height:1.4;cursor:pointer;}
+
+/* CONTENT */
+.content{flex:1;display:flex;position:relative;z-index:1;overflow:hidden;}
+.panel{flex:1;display:none;flex-direction:column;height:100%;}
+.panel.active{display:flex;}
+
+/* LEFT DRAWER */
+.left-drawer{width:240px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.drawer-head{padding:20px 16px 14px;border-bottom:1px solid var(--border);}
+.drawer-title{font-family:var(--font-head);font-size:10px;letter-spacing:2px;color:var(--fire2);text-transform:uppercase;margin-bottom:12px;}
+.new-chat-btn{width:100%;padding:9px 14px;background:linear-gradient(135deg,rgba(255,85,0,0.15),rgba(255,85,0,0.05));border:1px solid rgba(255,85,0,0.25);border-radius:9px;color:var(--fire2);font-family:var(--font-body);font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all 0.2s;}
+.new-chat-btn:hover{background:linear-gradient(135deg,rgba(255,85,0,0.25),rgba(255,85,0,0.1));box-shadow:0 0 12px rgba(255,85,0,0.15);}
+.mode-selector{padding:12px 16px;border-bottom:1px solid var(--border);}
+.mode-label{font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
+.mode-pills{display:flex;gap:5px;}
+.mode-pill{flex:1;padding:6px 4px;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:10px;font-family:var(--font-body);cursor:pointer;text-align:center;transition:all 0.18s;font-weight:500;}
+.mode-pill:hover{background:rgba(255,85,0,0.07);color:var(--text2);}
+.mode-pill.active{background:rgba(255,85,0,0.12);border-color:rgba(255,85,0,0.3);color:var(--fire2);}
+.mode-pill.active.smart{background:rgba(32,96,255,0.12);border-color:rgba(32,96,255,0.3);color:var(--blue2);}
+.chat-hist-list{flex:1;overflow-y:auto;padding:8px;scrollbar-width:thin;scrollbar-color:rgba(255,85,0,0.15) transparent;}
+.hist-section{font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;padding:8px 8px 4px;}
+.hist-item{padding:8px 10px;border-radius:8px;font-size:12px;color:var(--text2);cursor:pointer;transition:all 0.15s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:7px;border:1px solid transparent;margin-bottom:2px;}
+.hist-item:hover{background:rgba(255,85,0,0.06);color:var(--text);border-color:rgba(255,85,0,0.08);}
+.hist-item.active{background:rgba(255,85,0,0.1);color:var(--fire2);border-color:rgba(255,85,0,0.18);}
+.hist-item svg{flex-shrink:0;opacity:0.4;}
+
+/* CHAT MAIN */
+.chat-main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.chat-topbar{padding:14px 24px;background:rgba(6,8,16,0.8);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.ct-left{display:flex;align-items:center;gap:12px;}
+.ct-title{font-family:var(--font-head);font-size:13px;letter-spacing:2px;color:var(--fire2);}
+.ct-mode-badge{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;}
+.mode-fast .ct-mode-badge{background:rgba(50,200,100,0.1);border:1px solid rgba(50,200,100,0.2);color:#5edd88;}
+.mode-smart .ct-mode-badge{background:rgba(32,96,255,0.12);border:1px solid rgba(32,96,255,0.2);color:var(--blue2);}
+.mode-pro .ct-mode-badge{background:rgba(255,85,0,0.12);border:1px solid rgba(255,85,0,0.2);color:var(--fire2);}
+.ct-right{display:flex;gap:6px;}
+.tbar-btn{padding:6px 12px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:var(--font-body);font-size:11px;cursor:pointer;transition:all 0.18s;display:flex;align-items:center;gap:5px;}
+.tbar-btn:hover{background:rgba(255,85,0,0.08);color:var(--fire2);border-color:rgba(255,85,0,0.2);}
+.tbar-btn.key-btn{border-color:rgba(255,85,0,0.2);color:var(--fire2);}
+
+.style-strip{padding:8px 24px;border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;gap:6px;flex-shrink:0;overflow-x:auto;scrollbar-width:none;}
+.style-strip::-webkit-scrollbar{display:none;}
+.style-lbl{font-size:9px;letter-spacing:1.2px;color:var(--muted);text-transform:uppercase;margin-right:4px;white-space:nowrap;}
+.style-chip{padding:4px 11px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:10px;font-family:var(--font-body);cursor:pointer;transition:all 0.15s;white-space:nowrap;}
+.style-chip:hover{color:var(--text2);border-color:rgba(255,255,255,0.12);}
+.style-chip.active{background:rgba(255,85,0,0.1);border-color:rgba(255,85,0,0.25);color:var(--fire2);}
+
+/* MESSAGES */
+.messages-wrap{flex:1;overflow-y:auto;padding:24px;scrollbar-width:thin;scrollbar-color:rgba(255,85,0,0.15) transparent;}
+
+.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80%;text-align:center;gap:22px;animation:wu 0.7s ease;}
+@keyframes wu{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+.welcome-emblem{position:relative;width:88px;height:88px;}
+.welcome-emblem .core{width:88px;height:88px;background:linear-gradient(135deg,var(--fire),var(--fire3));border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:40px;box-shadow:0 0 50px rgba(255,85,0,0.45),0 0 100px rgba(255,85,0,0.15);animation:emblem-pulse 3s ease-in-out infinite;}
+@keyframes emblem-pulse{0%,100%{box-shadow:0 0 50px rgba(255,85,0,0.45),0 0 100px rgba(255,85,0,0.15);}50%{box-shadow:0 0 70px rgba(255,85,0,0.65),0 0 140px rgba(255,85,0,0.25);}}
+.welcome-emblem .ring{position:absolute;inset:-10px;border-radius:34px;border:1px solid rgba(255,85,0,0.2);animation:spin-ring 12s linear infinite;}
+.welcome-emblem .ring2{position:absolute;inset:-20px;border-radius:44px;border:1px dashed rgba(255,85,0,0.1);animation:spin-ring 20s linear infinite reverse;}
+@keyframes spin-ring{to{transform:rotate(360deg);}}
+.welcome h1{font-family:var(--font-head);font-size:38px;font-weight:900;letter-spacing:5px;background:linear-gradient(90deg,var(--fire),var(--fire3),#fff,var(--fire3));background-size:200% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 4s linear infinite;}
+@keyframes shimmer{to{background-position:200% 0;}}
+.welcome-tagline{font-size:14px;color:var(--text2);max-width:440px;line-height:1.75;font-weight:300;}
+.suggest-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:560px;width:100%;}
+.sug-card{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px 16px;cursor:pointer;transition:all 0.2s;text-align:left;}
+.sug-card:hover{background:rgba(255,85,0,0.06);border-color:rgba(255,85,0,0.18);transform:translateY(-2px);}
+.sug-icon{font-size:20px;margin-bottom:6px;}
+.sug-title{font-size:12px;font-weight:600;color:var(--text);}
+.sug-desc{font-size:11px;color:var(--muted);margin-top:3px;}
+
+/* MESSAGES */
+.msg{display:flex;gap:14px;margin-bottom:22px;animation:msgIn 0.3s ease;max-width:860px;}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.msg.user{flex-direction:row-reverse;}
+.msg-av{width:36px;height:36px;flex-shrink:0;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-top:2px;}
+.msg-av.ai{background:linear-gradient(135deg,var(--fire),var(--fire2));box-shadow:0 0 14px rgba(255,85,0,0.3);}
+.msg-av.usr{background:linear-gradient(135deg,#1a1a40,#102040);border:1px solid rgba(255,255,255,0.08);}
+.msg-body{flex:1;min-width:0;}
+.msg.user .msg-body{display:flex;flex-direction:column;align-items:flex-end;}
+.msg-meta{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.msg.user .msg-meta{flex-direction:row-reverse;}
+.msg-name{font-size:11px;font-weight:600;letter-spacing:0.5px;}
+.ai-name{font-family:var(--font-head);font-size:10px;color:var(--fire2);letter-spacing:1.5px;}
+.usr-name{color:var(--muted);}
+.msg-ts{font-size:10px;color:var(--muted);}
+.msg-badge{padding:1px 7px;border-radius:3px;font-size:9px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;}
+.badge-pro{background:rgba(255,85,0,0.1);border:1px solid rgba(255,85,0,0.2);color:var(--fire2);}
+.badge-smart{background:rgba(32,96,255,0.1);border:1px solid rgba(32,96,255,0.2);color:var(--blue2);}
+.badge-fast{background:rgba(50,200,100,0.08);border:1px solid rgba(50,200,100,0.2);color:#5edd88;}
+.msg-text{line-height:1.78;font-size:14px;color:#d8d0e4;font-weight:300;}
+.msg-text.user-text{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:4px 14px 14px 14px;padding:12px 15px;color:var(--text);font-weight:400;display:inline-block;text-align:left;max-width:520px;}
+.msg-text code{font-family:'Courier New',monospace;background:rgba(255,85,0,0.1);border:1px solid rgba(255,85,0,0.18);padding:1px 6px;border-radius:4px;font-size:12.5px;color:var(--fire3);}
+.msg-text pre{background:#080b14;border:1px solid rgba(255,85,0,0.12);border-radius:10px;padding:14px 16px;overflow-x:auto;margin:10px 0;font-family:'Courier New',monospace;font-size:12.5px;line-height:1.65;color:#c0b8d8;}
+.msg-text pre code{background:none;border:none;padding:0;color:inherit;}
+.msg-text strong{color:var(--fire4);font-weight:600;}
+.msg-text em{color:#aaaacc;}
+.msg-text h1{font-family:var(--font-head);font-size:17px;color:var(--fire2);margin:14px 0 8px;letter-spacing:1px;}
+.msg-text h2{font-family:var(--font-head);font-size:14px;color:var(--fire3);margin:12px 0 6px;letter-spacing:0.8px;}
+.msg-text h3{font-size:13px;color:var(--text2);font-weight:600;margin:10px 0 5px;}
+.msg-text ul,.msg-text ol{padding-left:18px;margin:8px 0;}
+.msg-text li{margin:3px 0;color:#c0b8d8;}
+.msg-text table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px;}
+.msg-text th{background:rgba(255,85,0,0.08);border:1px solid rgba(255,85,0,0.15);padding:8px 12px;color:var(--fire3);text-align:left;}
+.msg-text td{border:1px solid rgba(255,255,255,0.05);padding:7px 12px;color:var(--text2);}
+.msg-actions{display:flex;gap:6px;margin-top:8px;}
+.msg-action-btn{background:transparent;border:1px solid var(--border2);border-radius:6px;padding:4px 10px;color:var(--muted);font-size:10px;cursor:pointer;transition:all 0.15s;font-family:var(--font-body);display:flex;align-items:center;gap:4px;}
+.msg-action-btn:hover{background:rgba(255,85,0,0.07);color:var(--fire2);border-color:rgba(255,85,0,0.18);}
+
+/* TYPING */
+.typing-wrap{display:flex;gap:14px;margin-bottom:16px;animation:msgIn 0.3s ease;}
+.typing-dots{display:flex;align-items:center;gap:5px;padding:14px 0 4px;}
+.td{width:7px;height:7px;background:var(--fire);border-radius:50%;animation:td 1.2s infinite;opacity:0.5;}
+.td:nth-child(2){animation-delay:0.2s;background:var(--fire2);}
+.td:nth-child(3){animation-delay:0.4s;background:var(--fire3);}
+@keyframes td{0%,60%,100%{transform:translateY(0);opacity:0.4}30%{transform:translateY(-6px);opacity:1}}
+
+/* INPUT */
+.input-zone{padding:14px 24px 18px;background:linear-gradient(to top,var(--bg) 60%,transparent);flex-shrink:0;}
+.input-box{background:var(--bg3);border:1px solid rgba(255,255,255,0.08);border-radius:16px;transition:all 0.2s;overflow:hidden;}
+.input-box:focus-within{border-color:rgba(255,85,0,0.35);box-shadow:0 0 0 3px rgba(255,85,0,0.07),0 0 30px rgba(255,85,0,0.06);}
+.input-top2{display:flex;align-items:flex-end;gap:10px;padding:13px 13px 0;}
+#chat-input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:var(--font-body);font-size:14px;font-weight:400;resize:none;max-height:160px;min-height:24px;line-height:1.65;padding:0;overflow-y:auto;}
+#chat-input::placeholder{color:rgba(255,255,255,0.18);}
+.send-btn{width:40px;height:40px;flex-shrink:0;background:linear-gradient(135deg,var(--fire),var(--fire2));border:none;border-radius:11px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;box-shadow:0 0 16px rgba(255,85,0,0.35);margin-bottom:1px;}
+.send-btn:hover{transform:scale(1.05);box-shadow:0 0 24px rgba(255,85,0,0.55);}
+.send-btn:disabled{opacity:0.35;cursor:not-allowed;transform:none;}
+.input-bot{display:flex;align-items:center;justify-content:space-between;padding:7px 13px 11px;}
+.inp-tools{display:flex;gap:2px;}
+.inp-tool{background:transparent;border:none;color:var(--muted);cursor:pointer;padding:5px 8px;border-radius:6px;font-size:11px;transition:all 0.15s;font-family:var(--font-body);display:flex;align-items:center;gap:4px;}
+.inp-tool:hover{background:rgba(255,85,0,0.07);color:var(--fire2);}
+.inp-chars{font-size:10px;color:rgba(255,255,255,0.12);}
+.inp-hint{font-size:11px;color:rgba(255,255,255,0.1);text-align:center;margin-top:8px;}
+
+/* TOOLS */
+.tools-panel{flex:1;overflow-y:auto;padding:30px;scrollbar-width:thin;scrollbar-color:rgba(255,85,0,0.1) transparent;}
+.panel-header{margin-bottom:28px;}
+.panel-header h2{font-family:var(--font-head);font-size:20px;letter-spacing:3px;color:var(--fire2);margin-bottom:6px;}
+.panel-header p{font-size:13px;color:var(--text2);font-weight:300;}
+.tools-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;}
+.tool-card{background:var(--card);border:1px solid var(--border2);border-radius:16px;padding:22px;cursor:pointer;transition:all 0.25s;position:relative;overflow:hidden;}
+.tool-card:hover{border-color:rgba(255,85,0,0.25);transform:translateY(-3px);box-shadow:0 8px 30px rgba(0,0,0,0.3),0 0 20px rgba(255,85,0,0.06);}
+.tool-icon-wrap{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:14px;}
+.tc-fire{background:rgba(255,85,0,0.12);border:1px solid rgba(255,85,0,0.2);}
+.tc-blue{background:rgba(32,96,255,0.12);border:1px solid rgba(32,96,255,0.2);}
+.tc-gold{background:rgba(255,204,68,0.1);border:1px solid rgba(255,204,68,0.2);}
+.tc-green{background:rgba(50,200,100,0.1);border:1px solid rgba(50,200,100,0.2);}
+.tc-purple{background:rgba(160,80,255,0.1);border:1px solid rgba(160,80,255,0.2);}
+.tc-teal{background:rgba(32,200,200,0.1);border:1px solid rgba(32,200,200,0.2);}
+.tool-name{font-size:14px;font-weight:600;color:var(--text);margin-bottom:5px;}
+.tool-desc{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px;}
+.tool-use-btn{padding:8px 16px;border-radius:8px;border:1px solid rgba(255,85,0,0.2);background:rgba(255,85,0,0.07);color:var(--fire2);font-size:11px;font-family:var(--font-body);cursor:pointer;transition:all 0.18s;font-weight:500;}
+.tool-use-btn:hover{background:rgba(255,85,0,0.15);box-shadow:0 0 10px rgba(255,85,0,0.15);}
+.tool-badge{position:absolute;top:14px;right:14px;padding:3px 8px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;}
+.tb-pro{background:rgba(255,85,0,0.1);color:var(--fire2);border:1px solid rgba(255,85,0,0.15);}
+.tb-free{background:rgba(50,200,100,0.08);color:#5edd88;border:1px solid rgba(50,200,100,0.15);}
+
+/* PLANS */
+.plans-panel{flex:1;overflow-y:auto;padding:30px 30px 50px;scrollbar-width:thin;}
+.plans-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px;margin-top:10px;}
+.plan-card{background:var(--card);border:1px solid var(--border2);border-radius:18px;padding:26px 22px;position:relative;overflow:hidden;transition:all 0.25s;}
+.plan-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,0.35);}
+.plan-card.featured{border-color:rgba(255,85,0,0.35);box-shadow:0 0 30px rgba(255,85,0,0.1);}
+.plan-card.featured::after{content:'MOST POPULAR';position:absolute;top:14px;right:-25px;background:linear-gradient(135deg,var(--fire),var(--fire2));color:#fff;font-size:8px;font-family:var(--font-head);letter-spacing:1px;padding:4px 36px;transform:rotate(45deg);transform-origin:center;}
+.plan-icon{font-size:30px;margin-bottom:14px;}
+.plan-name{font-family:var(--font-head);font-size:14px;letter-spacing:2px;color:var(--fire2);margin-bottom:4px;}
+.plan-price{font-family:var(--font-head);font-size:32px;color:var(--text);margin:10px 0 4px;}
+.plan-price span{font-size:13px;color:var(--muted);}
+.plan-tagline{font-size:12px;color:var(--text2);margin-bottom:16px;}
+.plan-divider{height:1px;background:var(--border);margin:14px 0;}
+.plan-features{list-style:none;display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
+.plan-features li{font-size:12px;color:var(--text2);display:flex;align-items:center;gap:7px;}
+.plan-features li::before{content:'⚡';font-size:10px;}
+.plan-features li.off{color:var(--muted);opacity:0.5;}
+.plan-features li.off::before{content:'✕';color:var(--muted);}
+.plan-cta{width:100%;padding:11px;border-radius:10px;font-size:12px;font-family:var(--font-body);font-weight:600;cursor:pointer;transition:all 0.2s;letter-spacing:0.5px;}
+.cta-outline{background:transparent;border:1px solid var(--border2);color:var(--text2);}
+.cta-outline:hover{border-color:rgba(255,85,0,0.3);color:var(--fire2);}
+.cta-fill{background:linear-gradient(135deg,var(--fire),var(--fire2));border:none;color:#fff;box-shadow:0 0 16px rgba(255,85,0,0.3);}
+.cta-fill:hover{box-shadow:0 0 28px rgba(255,85,0,0.5);transform:scale(1.02);}
+.cta-gold{background:linear-gradient(135deg,#b8860b,var(--gold));border:none;color:#0a0800;font-weight:700;}
+
+/* SETTINGS */
+.settings-inner{flex:1;overflow-y:auto;padding:30px;scrollbar-width:thin;max-width:700px;}
+.settings-section{margin-bottom:28px;}
+.settings-section-title{font-family:var(--font-head);font-size:10px;letter-spacing:2px;color:var(--fire2);text-transform:uppercase;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.03);}
+.settings-row:last-child{border-bottom:none;}
+.sr-title{font-size:13px;color:var(--text);font-weight:500;}
+.sr-desc{font-size:11px;color:var(--muted);margin-top:2px;}
+.sr-right{display:flex;gap:5px;}
+.opt-btn{padding:5px 12px;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:11px;font-family:var(--font-body);cursor:pointer;transition:all 0.15s;}
+.opt-btn:hover{color:var(--text2);border-color:rgba(255,255,255,0.12);}
+.opt-btn.active{background:rgba(255,85,0,0.1);border-color:rgba(255,85,0,0.25);color:var(--fire2);}
+.toggle{position:relative;width:42px;height:22px;cursor:pointer;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-track{position:absolute;inset:0;background:rgba(255,255,255,0.1);border-radius:22px;transition:0.3s;border:1px solid rgba(255,255,255,0.08);}
+.toggle input:checked+.toggle-track{background:rgba(255,85,0,0.4);border-color:rgba(255,85,0,0.5);}
+.toggle-thumb{position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:0.3s;box-shadow:0 1px 4px rgba(0,0,0,0.3);}
+.toggle input:checked~.toggle-thumb{transform:translateX(20px);}
+
+/* API key settings area */
+.api-settings-box{background:var(--bg2);border:1px solid rgba(255,85,0,0.15);border-radius:12px;padding:16px;margin-top:8px;}
+.api-key-row{display:flex;gap:8px;align-items:center;}
+.api-key-input{flex:1;background:var(--bg3);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:9px 12px;color:var(--text);font-family:var(--font-body);font-size:12px;outline:none;transition:all 0.2s;}
+.api-key-input:focus{border-color:rgba(255,85,0,0.35);}
+.api-save-btn{padding:9px 16px;background:linear-gradient(135deg,var(--fire),var(--fire2));border:none;border-radius:8px;color:#fff;font-size:12px;font-family:var(--font-body);cursor:pointer;white-space:nowrap;transition:all 0.2s;}
+.api-save-btn:hover{box-shadow:0 0 14px rgba(255,85,0,0.3);}
+.api-status{font-size:11px;margin-top:8px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:30px;right:30px;background:var(--bg3);border:1px solid rgba(255,85,0,0.25);border-radius:10px;padding:12px 18px;font-size:13px;color:var(--text2);box-shadow:0 8px 24px rgba(0,0,0,0.3);display:flex;align-items:center;gap:8px;animation:toastIn 0.3s ease,toastOut 0.3s ease 2.5s forwards;z-index:1000;}
+@keyframes toastIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+@keyframes toastOut{to{opacity:0;transform:translateY(10px);}}
+
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,85,0,0.18);border-radius:4px;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+@media(max-width:780px){.left-drawer{display:none;}}
+@media(max-width:520px){.tools-grid,.plans-grid,.suggest-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="bg-fx">
+  <div class="bg-orb"></div><div class="bg-orb"></div><div class="bg-orb"></div>
+</div>
+<div class="bg-grid"></div>
+
+<!-- ══ API KEY GATE ══ -->
+<div id="api-gate">
+  <div class="gate-box">
+    <div class="gate-logo">⚡</div>
+    <div class="gate-title">BLAZE-AI</div>
+    <p class="gate-sub">Enter your Anthropic API key to activate BLAZE-AI. Your key is stored only in your browser's memory and never sent anywhere except the Anthropic API.</p>
+    <div class="gate-label">Anthropic API Key</div>
+    <input class="gate-input" id="gate-key-input" type="password" placeholder="sk-ant-api03-..." autocomplete="off"/>
+    <p class="gate-hint">
+      Don't have a key? Get one free at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a><br/>
+      Your key is used only to talk to Claude AI on your behalf.
+    </p>
+    <button class="gate-btn" onclick="activateKey()">⚡ Activate BLAZE-AI</button>
+    <div class="gate-err" id="gate-err">Invalid or missing key. Please try again.</div>
+    <div class="gate-skip" onclick="skipKey()">Skip for now (demo mode)</div>
+  </div>
+</div>
+
+<!-- ══ SIDEBAR ══ -->
+<aside class="sidebar">
+  <div class="sidebar-logo" onclick="switchPanel('chat')">⚡</div>
+  <button class="nav-btn active" id="nav-chat" onclick="switchPanel('chat')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="nav-label">Chat</span></button>
+  <button class="nav-btn" id="nav-tools" onclick="switchPanel('tools')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span class="nav-label">Tools</span></button>
+  <button class="nav-btn" id="nav-plans" onclick="switchPanel('plans')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span class="nav-label">Plans</span></button>
+  <button class="nav-btn" id="nav-settings" onclick="switchPanel('settings')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="nav-label">Settings</span></button>
+  <div class="sidebar-spacer"></div>
+  <div class="plan-badge" onclick="switchPanel('plans')">FREE<br>PLAN</div>
+</aside>
+
+<!-- ══ CONTENT ══ -->
+<div class="content">
+
+  <!-- CHAT -->
+  <div class="panel active" id="panel-chat">
+    <div class="left-drawer">
+      <div class="drawer-head">
+        <div class="drawer-title">Conversations</div>
+        <button class="new-chat-btn" onclick="newChat()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New Chat
+        </button>
+      </div>
+      <div class="mode-selector">
+        <div class="mode-label">Chat Mode</div>
+        <div class="mode-pills">
+          <button class="mode-pill fast active" id="pill-fast" onclick="setMode('fast')">⚡ Fast</button>
+          <button class="mode-pill smart" id="pill-smart" onclick="setMode('smart')">🧠 Smart</button>
+          <button class="mode-pill" id="pill-pro" onclick="setMode('pro')">🔥 Pro</button>
+        </div>
+      </div>
+      <div class="chat-hist-list" id="hist-list">
+        <div class="hist-section">Today</div>
+        <div class="hist-item active" id="hist-current">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>New Session
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-main">
+      <div class="chat-topbar mode-fast" id="chat-topbar">
+        <div class="ct-left">
+          <div class="ct-title">BLAZE-AI</div>
+          <div class="ct-mode-badge" id="mode-badge">⚡ FAST</div>
+          <div style="width:6px;height:6px;background:var(--fire);border-radius:50%;box-shadow:0 0 6px var(--fire);animation:pulse 2s infinite" id="status-dot"></div>
+        </div>
+        <div class="ct-right">
+          <button class="tbar-btn key-btn" onclick="showKeyDialog()">🔑 API Key</button>
+          <button class="tbar-btn" onclick="clearChat()">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.37"/></svg>Clear
+          </button>
+          <button class="tbar-btn" onclick="copyLastMsg()">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy
+          </button>
+        </div>
+      </div>
+      <div class="style-strip">
+        <span class="style-lbl">Style:</span>
+        <button class="style-chip active" id="sty-balanced" onclick="setStyle('Balanced')">Balanced</button>
+        <button class="style-chip" id="sty-short" onclick="setStyle('Short')">Short</button>
+        <button class="style-chip" id="sty-detailed" onclick="setStyle('Detailed')">Detailed</button>
+        <button class="style-chip" id="sty-step" onclick="setStyle('Step-by-step')">Step-by-step</button>
+        <button class="style-chip" id="sty-professional" onclick="setStyle('Professional')">Professional</button>
+        <button class="style-chip" id="sty-creative" onclick="setStyle('Creative')">Creative</button>
+      </div>
+      <div class="messages-wrap" id="messages">
+        <div class="welcome" id="welcome">
+          <div class="welcome-emblem"><div class="ring2"></div><div class="ring"></div><div class="core">⚡</div></div>
+          <h1>BLAZE-AI</h1>
+          <p class="welcome-tagline">Premium AI intelligence at your command.<br/>Select a mode, pick a style, and fire away.</p>
+          <div class="suggest-grid">
+            <div class="sug-card" onclick="suggest('Build me a REST API in Python using FastAPI with JWT authentication')">
+              <div class="sug-icon">💻</div><div class="sug-title">Generate Code</div><div class="sug-desc">Python, JS, TypeScript, SQL...</div>
+            </div>
+            <div class="sug-card" onclick="suggest('Explain how transformers work in AI — step by step with examples')">
+              <div class="sug-icon">🔬</div><div class="sug-title">Deep Explanation</div><div class="sug-desc">AI, science, tech, concepts...</div>
+            </div>
+            <div class="sug-card" onclick="suggest('Give me 10 SaaS startup ideas in the AI productivity space with high market potential')">
+              <div class="sug-icon">💡</div><div class="sug-title">Generate Ideas</div><div class="sug-desc">Startups, content, strategy...</div>
+            </div>
+            <div class="sug-card" onclick="suggest('Write a compelling LinkedIn post about AI changing the future of work')">
+              <div class="sug-icon">✍️</div><div class="sug-title">Write Content</div><div class="sug-desc">Posts, emails, scripts, copy...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="input-zone">
+        <div class="input-box">
+          <div class="input-top2">
+            <textarea id="chat-input" placeholder="Message BLAZE-AI..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this);countChars()"></textarea>
+            <button class="send-btn" id="send-btn" onclick="send()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+          <div class="input-bot">
+            <div class="inp-tools">
+              <button class="inp-tool" onclick="insertSnippet('debug')">🐛 Debug</button>
+              <button class="inp-tool" onclick="insertSnippet('improve')">✨ Enhance</button>
+              <button class="inp-tool" onclick="insertSnippet('explain')">📖 Explain</button>
+            </div>
+            <span class="inp-chars" id="inp-chars">0 / 4000</span>
+          </div>
+        </div>
+        <div class="inp-hint">Enter to send · Shift+Enter for new line</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOOLS -->
+  <div class="panel" id="panel-tools">
+    <div class="tools-panel">
+      <div class="panel-header"><h2>⚙️ TOOLS</h2><p>High-performance AI tools — click one to open it in chat.</p></div>
+      <div class="tools-grid">
+        <div class="tool-card" onclick="useTool('code')"><div class="tool-badge tb-free">FREE</div><div class="tool-icon-wrap tc-fire">💻</div><div class="tool-name">Code Generator</div><div class="tool-desc">Generate clean, optimized, production-ready code in any language.</div><button class="tool-use-btn">Launch Tool →</button></div>
+        <div class="tool-card" onclick="useTool('debug')"><div class="tool-badge tb-free">FREE</div><div class="tool-icon-wrap tc-blue">🐛</div><div class="tool-name">Debugger</div><div class="tool-desc">Paste your broken code — BLAZE-AI finds and fixes errors with explanations.</div><button class="tool-use-btn">Launch Tool →</button></div>
+        <div class="tool-card" onclick="useTool('write')"><div class="tool-badge tb-free">FREE</div><div class="tool-icon-wrap tc-gold">✍️</div><div class="tool-name">Content Writer</div><div class="tool-desc">Blogs, captions, ad copy, scripts, emails — elite-level writing.</div><button class="tool-use-btn">Launch Tool →</button></div>
+        <div class="tool-card" onclick="useTool('ideas')"><div class="tool-badge tb-free">FREE</div><div class="tool-icon-wrap tc-green">💡</div><div class="tool-name">Idea Generator</div><div class="tool-desc">Business ideas, startup concepts, content angles — brainstorm at scale.</div><button class="tool-use-btn">Launch Tool →</button></div>
+        <div class="tool-card" onclick="useTool('analyze')"><div class="tool-badge tb-pro">PRO</div><div class="tool-icon-wrap tc-purple">🔍</div><div class="tool-name">AI Analyzer</div><div class="tool-desc">Analyze text, prompts, business plans, code architecture — deep insights.</div><button class="tool-use-btn">Launch Tool →</button></div>
+        <div class="tool-card" onclick="useTool('enhance')"><div class="tool-badge tb-pro">PRO</div><div class="tool-icon-wrap tc-teal">✨</div><div class="tool-name">Prompt Enhancer</div><div class="tool-desc">Transform weak prompts into powerful, engineered masterpieces.</div><button class="tool-use-btn">Launch Tool →</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLANS -->
+  <div class="panel" id="panel-plans">
+    <div class="plans-panel">
+      <div class="panel-header"><h2>💳 PLANS</h2><p>Unlock more power. Choose the plan that matches your ambition.</p></div>
+      <div class="plans-grid">
+        <div class="plan-card"><div class="plan-icon">🆓</div><div class="plan-name">FREE</div><div class="plan-price">$0<span>/mo</span></div><div class="plan-tagline">Start exploring BLAZE-AI</div><div class="plan-divider"></div><ul class="plan-features"><li>20–50 messages/day</li><li>⚡ Fast Mode only</li><li>Basic tools access</li><li>Standard speed</li><li class="off">Smart / Pro Mode</li><li class="off">Advanced tools</li></ul><button class="plan-cta cta-outline">Current Plan</button></div>
+        <div class="plan-card"><div class="plan-icon">⚡</div><div class="plan-name">PLUS</div><div class="plan-price">$12<span>/mo</span></div><div class="plan-tagline">Power users who need more</div><div class="plan-divider"></div><ul class="plan-features"><li>100–300 messages/day</li><li>⚡ Fast + 🧠 Smart Mode</li><li>Most tools unlocked</li><li>Faster responses</li><li>Chat history saved</li><li class="off">Pro Mode</li></ul><button class="plan-cta cta-fill" onclick="toast('⚡ Upgrading to PLUS — coming soon!')">Upgrade to PLUS</button></div>
+        <div class="plan-card featured"><div class="plan-icon">🔥</div><div class="plan-name">PRO</div><div class="plan-price">$29<span>/mo</span></div><div class="plan-tagline">Full BLAZE-AI experience</div><div class="plan-divider"></div><ul class="plan-features"><li>Unlimited messages</li><li>All 3 Modes unlocked</li><li>All tools unlocked</li><li>Priority speed</li><li>Advanced reasoning</li><li>Early feature access</li></ul><button class="plan-cta cta-fill" onclick="toast('🔥 Upgrading to PRO — coming soon!')">Upgrade to PRO</button></div>
+        <div class="plan-card"><div class="plan-icon">👑</div><div class="plan-name">ELITE</div><div class="plan-price">$79<span>/mo</span></div><div class="plan-tagline">The ultimate AI command center</div><div class="plan-divider"></div><ul class="plan-features"><li>Unlimited + ultra-fast</li><li>Custom AI personality</li><li>Full API access</li><li>Priority servers</li><li>Dedicated support</li><li>White-label options</li></ul><button class="plan-cta cta-gold" onclick="toast('👑 ELITE — contact us for pricing!')">Get ELITE</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="panel" id="panel-settings">
+    <div class="settings-inner">
+      <div class="panel-header"><h2>⚙️ SETTINGS</h2><p>Customize your BLAZE-AI experience.</p></div>
+
+      <!-- API KEY SECTION -->
+      <div class="settings-section">
+        <div class="settings-section-title">🔑 API Key</div>
+        <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:10px;">
+          <div>
+            <div class="sr-title">Anthropic API Key</div>
+            <div class="sr-desc">Required to use BLAZE-AI. Get yours free at console.anthropic.com</div>
+          </div>
+          <div class="api-settings-box" style="width:100%">
+            <div class="api-key-row">
+              <input class="api-key-input" id="settings-key-input" type="password" placeholder="sk-ant-api03-..." />
+              <button class="api-save-btn" onclick="saveKeyFromSettings()">Save Key</button>
+            </div>
+            <div class="api-status" id="api-status-text">
+              <span id="api-key-status">⚪ No key saved</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">Chat Mode</div>
+        <div class="settings-row">
+          <div><div class="sr-title">Default Mode</div><div class="sr-desc">Sets how BLAZE-AI reasons by default</div></div>
+          <div class="sr-right">
+            <button class="opt-btn active" id="stt-fast" onclick="setSettingMode('fast')">⚡ Fast</button>
+            <button class="opt-btn" id="stt-smart" onclick="setSettingMode('smart')">🧠 Smart</button>
+            <button class="opt-btn" id="stt-pro" onclick="setSettingMode('pro')">🔥 Pro</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">Response Style</div>
+        <div class="settings-row">
+          <div><div class="sr-title">Response Length</div><div class="sr-desc">How long should answers be?</div></div>
+          <div class="sr-right">
+            <button class="opt-btn active" id="len-medium" onclick="setLen('medium')">Medium</button>
+            <button class="opt-btn" id="len-short" onclick="setLen('short')">Short</button>
+            <button class="opt-btn" id="len-long" onclick="setLen('long')">Long</button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div><div class="sr-title">Tone</div><div class="sr-desc">Communication style</div></div>
+          <div class="sr-right">
+            <button class="opt-btn" id="tone-casual" onclick="setTone('casual')">Casual</button>
+            <button class="opt-btn active" id="tone-pro" onclick="setTone('professional')">Professional</button>
+            <button class="opt-btn" id="tone-dev" onclick="setTone('developer')">Developer</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">Features</div>
+        <div class="settings-row"><div><div class="sr-title">Save Chat History</div><div class="sr-desc">Remember conversations across sessions</div></div><label class="toggle"><input type="checkbox" checked onchange="toast('✅ Setting saved')"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+        <div class="settings-row"><div><div class="sr-title">AI Memory</div><div class="sr-desc">BLAZE-AI remembers your preferences</div></div><label class="toggle"><input type="checkbox" onchange="toast('✅ Setting saved')"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+        <div class="settings-row"><div><div class="sr-title">Suggest Better Prompts</div><div class="sr-desc">Auto-suggest prompt improvements</div></div><label class="toggle"><input type="checkbox" checked onchange="toast('✅ Setting saved')"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">Data</div>
+        <div class="settings-row"><div><div class="sr-title">Clear All Conversations</div><div class="sr-desc">Permanently delete all chat history</div></div><button class="opt-btn" onclick="clearAll()" style="color:#ff5566;border-color:rgba(255,80,100,0.2);">Clear All</button></div>
+        <div class="settings-row"><div><div class="sr-title">Remove API Key</div><div class="sr-desc">Clear saved key from memory</div></div><button class="opt-btn" onclick="removeKey()" style="color:#ff5566;border-color:rgba(255,80,100,0.2);">Remove Key</button></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let API_KEY = '';
+let state = { mode:'fast', style:'Balanced', tone:'professional', length:'medium', history:[], busy:false };
+
+/* ── API GATE ── */
+function activateKey() {
+  const val = document.getElementById('gate-key-input').value.trim();
+  if (!val.startsWith('sk-ant')) {
+    document.getElementById('gate-err').style.display = 'block';
+    document.getElementById('gate-err').textContent = 'Key must start with "sk-ant". Get yours at console.anthropic.com';
+    return;
+  }
+  API_KEY = val;
+  document.getElementById('api-gate').style.display = 'none';
+  updateKeyStatus();
+  toast('⚡ BLAZE-AI activated! Ready to fire.');
+  document.getElementById('chat-input').focus();
+}
+
+function skipKey() {
+  document.getElementById('api-gate').style.display = 'none';
+  toast('⚠️ Demo mode — add your API key in Settings or via the 🔑 button to chat');
+}
+
+function showKeyDialog() {
+  document.getElementById('gate-key-input').value = API_KEY || '';
+  document.getElementById('gate-err').style.display = 'none';
+  document.getElementById('api-gate').style.display = 'flex';
+}
+
+function saveKeyFromSettings() {
+  const val = document.getElementById('settings-key-input').value.trim();
+  if (!val.startsWith('sk-ant')) {
+    toast('❌ Invalid key format. Must start with sk-ant');
+    return;
+  }
+  API_KEY = val;
+  updateKeyStatus();
+  toast('✅ API key saved. BLAZE-AI is ready!');
+}
+
+function removeKey() {
+  API_KEY = '';
+  document.getElementById('settings-key-input').value = '';
+  updateKeyStatus();
+  toast('🗑️ API key removed');
+}
+
+function updateKeyStatus() {
+  const el = document.getElementById('api-key-status');
+  if (API_KEY) {
+    el.textContent = '🟢 Key active: ' + API_KEY.slice(0, 12) + '••••••••';
+    el.style.color = '#5edd88';
+    if (document.getElementById('settings-key-input').value === '') {
+      document.getElementById('settings-key-input').placeholder = API_KEY.slice(0,12) + '••••••••';
+    }
+  } else {
+    el.textContent = '⚪ No key saved';
+    el.style.color = 'var(--muted)';
+  }
+}
+
+/* ── SYSTEM ── */
+function buildSystem() {
+  const md = { fast:'FAST MODE: Concise, direct. No fluff.', smart:'SMART MODE: Balanced, thorough but not excessive.', pro:'PRO MODE: Deep, advanced, expert-level comprehensive output.' };
+  const tn = { casual:'Friendly, relaxed tone.', professional:'Professional, polished tone.', developer:'Technical developer tone — precise, code-first.' };
+  const ln = { short:'Keep responses short.', medium:'Use medium-length responses.', long:'Provide long, detailed, comprehensive responses.' };
+  return `You are BLAZE-AI, a next-generation premium AI assistant.\n\n${md[state.mode]}\n${tn[state.tone]}\n${ln[state.length]}\n${state.style !== 'Balanced' ? 'Output style: ' + state.style + '.' : ''}\n\nRules:\n- Best possible answer every time\n- Use markdown formatting: **bold**, \`code\`, \`\`\`code blocks\`\`\`, headers, bullet lists, tables\n- Never say "I am just an AI"\n- Refer to yourself as "BLAZE-AI"\n- Occasionally say: "Optimized solution below." or "High-performance output ready."\n- Handle any domain: coding, writing, analysis, business, science, math`;
+}
+
+/* ── PANEL ── */
+function switchPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  document.getElementById('nav-' + id).classList.add('active');
+}
+
+/* ── MODE ── */
+function setMode(m) {
+  state.mode = m;
+  ['fast','smart','pro'].forEach(x => {
+    const p = document.getElementById('pill-' + x);
+    p.className = 'mode-pill' + (x === 'smart' ? ' smart' : '') + (x === m ? ' active' + (x === 'smart' ? ' smart' : '') : '');
+    if (x === m && x === 'pro') { p.style.background = 'rgba(255,85,0,0.12)'; p.style.borderColor = 'rgba(255,85,0,0.3)'; p.style.color = 'var(--fire2)'; }
+    else if (x !== m) { p.style.background = ''; p.style.borderColor = ''; p.style.color = ''; }
+  });
+  const tb = document.getElementById('chat-topbar');
+  const badge = document.getElementById('mode-badge');
+  tb.className = 'chat-topbar mode-' + m;
+  badge.textContent = m === 'fast' ? '⚡ FAST' : m === 'smart' ? '🧠 SMART' : '🔥 PRO';
+  toast(`${m === 'fast' ? '⚡' : m === 'smart' ? '🧠' : '🔥'} ${m.charAt(0).toUpperCase()+m.slice(1)} Mode activated`);
+}
+
+function setStyle(s) {
+  state.style = s;
+  document.querySelectorAll('.style-chip').forEach(c => c.classList.remove('active'));
+  const map = { 'Balanced':'balanced','Short':'short','Detailed':'detailed','Step-by-step':'step','Professional':'professional','Creative':'creative' };
+  const el = document.getElementById('sty-' + map[s]);
+  if (el) el.classList.add('active');
+}
+
+function setSettingMode(m) { state.mode=m; ['fast','smart','pro'].forEach(x=>document.getElementById('stt-'+x).classList.toggle('active',x===m)); setMode(m); }
+function setLen(l) { state.length=l; ['short','medium','long'].forEach(x=>document.getElementById('len-'+x).classList.toggle('active',x===l)); toast('✅ Length: '+l); }
+function setTone(t) { state.tone=t; ['casual','pro','dev'].forEach(x=>{const k=x==='pro'?'professional':x==='dev'?'developer':'casual';document.getElementById('tone-'+x).classList.toggle('active',k===t);}); toast('✅ Tone: '+t); }
+
+/* ── CHAT ── */
+function t() { return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,160)+'px'; }
+function countChars() { document.getElementById('inp-chars').textContent=document.getElementById('chat-input').value.length+' / 4000'; }
+function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();} }
+function scrollBot() { const w=document.getElementById('messages'); w.scrollTop=w.scrollHeight; }
+function suggest(txt) { document.getElementById('chat-input').value=txt; autoResize(document.getElementById('chat-input')); countChars(); send(); }
+function insertSnippet(type) { const inp=document.getElementById('chat-input'); const s={debug:'Debug this code and explain what\'s wrong:\n\n',improve:'Improve and enhance this:\n\n',explain:'Explain this step by step:\n\n'}; inp.value=(inp.value+s[type]).trim()+'\n'; autoResize(inp); countChars(); inp.focus(); }
+
+function renderMD(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/```(\w*)\n([\s\S]*?)```/g,(_,l,c)=>`<pre><code>${c.trim()}</code></pre>`)
+    .replace(/`([^`\n]+)`/g,'<code>$1</code>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/^### (.+)$/gm,'<h3>$1</h3>').replace(/^## (.+)$/gm,'<h2>$1</h2>').replace(/^# (.+)$/gm,'<h1>$1</h1>')
+    .replace(/^[-*] (.+)$/gm,'<li>$1</li>')
+    .replace(/^(\d+)\. (.+)$/gm,'<li>$2</li>')
+    .replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>');
+}
+function escHTML(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+
+function appendMsg(role, content) {
+  document.getElementById('welcome').style.display = 'none';
+  const wrap = document.getElementById('messages');
+  const isAI = role === 'assistant';
+  const div = document.createElement('div');
+  div.className = 'msg' + (isAI ? '' : ' user');
+  div.innerHTML = `
+    <div class="msg-av ${isAI?'ai':'usr'}">${isAI?'⚡':'👤'}</div>
+    <div class="msg-body">
+      <div class="msg-meta">
+        <span class="msg-name ${isAI?'ai-name':'usr-name'}">${isAI?'BLAZE-AI':'You'}</span>
+        <span class="msg-ts">${t()}</span>
+        ${isAI?`<span class="msg-badge badge-${state.mode}">${state.mode.toUpperCase()}</span>`:''}
+      </div>
+      <div class="msg-text ${isAI?'':'user-text'}">${isAI?renderMD(content):escHTML(content)}</div>
+      ${isAI?`<div class="msg-actions"><button class="msg-action-btn" onclick="copyText(this)">📋 Copy</button><button class="msg-action-btn" onclick="regenMsg(this)">🔄 Regenerate</button></div>`:''}
+    </div>`;
+  wrap.appendChild(div); scrollBot();
+}
+
+function showTyping() {
+  document.getElementById('welcome').style.display = 'none';
+  const wrap = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className='typing-wrap'; div.id='typing-indicator';
+  div.innerHTML=`<div class="msg-av ai">⚡</div><div><div class="msg-meta" style="margin-bottom:4px"><span class="msg-name ai-name">BLAZE-AI</span><span class="msg-ts">${t()}</span></div><div class="typing-dots"><div class="td"></div><div class="td"></div><div class="td"></div></div></div>`;
+  wrap.appendChild(div); scrollBot();
+}
+function removeTyping() { const el=document.getElementById('typing-indicator'); if(el)el.remove(); }
+
+async function send() {
+  const inp = document.getElementById('chat-input');
+  const txt = inp.value.trim();
+  if (!txt || state.busy) return;
+
+  if (!API_KEY) {
+    toast('🔑 Please add your Anthropic API key first! Click the "🔑 API Key" button above.');
+    showKeyDialog();
+    return;
+  }
+
+  state.busy = true;
+  document.getElementById('send-btn').disabled = true;
+  inp.value = ''; autoResize(inp); countChars();
+  appendMsg('user', txt);
+  state.history.push({ role:'user', content:txt });
+
+  const cur = document.getElementById('hist-current');
+  if (cur && cur.textContent.includes('New Session')) {
+    cur.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>${txt.slice(0,26)}${txt.length>26?'…':''}`;
+  }
+
+  showTyping();
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-io': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1024,
+        system: buildSystem(),
+        messages: state.history
+      })
+    });
+
+    const data = await res.json();
+    removeTyping();
+
+    if (data.error) {
+      const errMsg = data.error.message || 'Unknown error';
+      if (errMsg.includes('authentication') || errMsg.includes('API key')) {
+        API_KEY = '';
+        updateKeyStatus();
+        appendMsg('assistant', `🔑 **Invalid API Key.** Please check your key and try again.\n\nClick the **🔑 API Key** button to update it.`);
+      } else {
+        appendMsg('assistant', `⚠️ **API Error:** ${errMsg}`);
+      }
+    } else {
+      const reply = data.content?.[0]?.text || '⚠️ No response received.';
+      state.history.push({ role:'assistant', content:reply });
+      appendMsg('assistant', reply);
+    }
+  } catch (err) {
+    removeTyping();
+    appendMsg('assistant', `⚠️ **Connection Error:** ${err.message}\n\nMake sure you have an internet connection and a valid API key.`);
+  }
+
+  state.busy = false;
+  document.getElementById('send-btn').disabled = false;
+  inp.focus();
+}
+
+function useTool(tool) {
+  const prompts = {
+    code:'I want to generate code. Please ask me: language, what it should do, and any requirements.',
+    debug:'I need help debugging code. Ask me to paste the code and describe the error.',
+    write:'I need content writing help. Ask me: content type, topic, tone, and target length.',
+    ideas:'I need idea generation. Ask me the domain (business/content/startup) and constraints.',
+    analyze:'I need deep analysis. Ask me what to analyze — text, prompt, business plan, or code.',
+    enhance:'I want to enhance a prompt. Ask me to share the prompt I want improved.'
+  };
+  switchPanel('chat');
+  setTimeout(() => suggest(prompts[tool]), 100);
+}
+
+function copyText(btn) { navigator.clipboard.writeText(btn.closest('.msg-body').querySelector('.msg-text').innerText).then(()=>toast('📋 Copied!')); }
+function copyLastMsg() { const msgs=document.querySelectorAll('.msg-text'); if(msgs.length){navigator.clipboard.writeText(msgs[msgs.length-1].innerText).then(()=>toast('📋 Copied!'));} }
+
+async function regenMsg(btn) {
+  if (state.busy || state.history.length < 2 || !API_KEY) return;
+  if (state.history[state.history.length-1].role === 'assistant') state.history.pop();
+  btn.closest('.msg').remove();
+  state.busy = true; document.getElementById('send-btn').disabled = true;
+  showTyping();
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', { method:'POST', headers:{'Content-Type':'application/json','x-api-key':API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-io':'true'}, body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1024,system:buildSystem(),messages:state.history}) });
+    const data = await res.json(); removeTyping();
+    const reply = data.content?.[0]?.text || '⚠️ No response.';
+    state.history.push({role:'assistant',content:reply}); appendMsg('assistant',reply);
+  } catch(e) { removeTyping(); appendMsg('assistant','⚠️ Regeneration failed.'); }
+  state.busy=false; document.getElementById('send-btn').disabled=false;
+}
+
+function clearChat() {
+  state.history=[];
+  document.getElementById('messages').innerHTML=`<div class="welcome" id="welcome" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80%;text-align:center;gap:22px"><div class="welcome-emblem"><div class="ring2"></div><div class="ring"></div><div class="core">⚡</div></div><h1>BLAZE-AI</h1><p class="welcome-tagline">Chat cleared. Ready for your next command.</p></div>`;
+  document.getElementById('hist-current').innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>New Session`;
+  toast('🧹 Chat cleared');
+}
+
+function newChat() {
+  if (state.history.length > 0) {
+    const list=document.getElementById('hist-list'); const firstMsg=state.history[0]?.content||'Past session';
+    const item=document.createElement('div'); item.className='hist-item';
+    item.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>${firstMsg.slice(0,26)}${firstMsg.length>26?'…':''}`;
+    list.insertBefore(item, list.children[1]);
+  }
+  clearChat();
+}
+
+function clearAll() { if(confirm('Delete all conversations?')){newChat();document.querySelectorAll('.hist-item:not(#hist-current)').forEach(i=>i.remove());toast('🗑️ All cleared');} }
+
+function toast(msg) {
+  const ex=document.querySelector('.toast'); if(ex)ex.remove();
+  const el=document.createElement('div'); el.className='toast'; el.textContent=msg;
+  document.body.appendChild(el); setTimeout(()=>el.remove(),3000);
+}
+
+// On load, check if key already in settings
+updateKeyStatus();
+</script>
+</body>
+</html>
